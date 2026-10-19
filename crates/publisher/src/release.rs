@@ -1,6 +1,6 @@
 //! Publishing: releasing a finished run's outputs.
 //!
-//! See `core/results.md`. Publishing is an explicit operation that releases the
+//! See `components/backend/results.md`. Publishing is an explicit operation that releases the
 //! generated code to its own public GitHub repository and deploys the playable
 //! build to Cloudflare Pages. It runs in the `tcab-publisher` Job when a run is
 //! published; the run record itself is stored on the backend separately (by the
@@ -16,11 +16,13 @@ use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use crate::backend_client::BackendClient;
+use test_cabinet_backend_client::BackendClient;
+use test_cabinet_contracts::run_record::RunRecord;
+use test_cabinet_contracts::test_case::TCAB_VENDOR_DIR;
+use test_cabinet_redact::SecretScrubber;
+use test_cabinet_suites::execution::ArtifactCollection;
+
 use crate::error::{Error, Result};
-use crate::execution::ArtifactCollection;
-use crate::redact::SecretScrubber;
-use crate::run_record::RunRecord;
 
 /// A request to release a single finished run: publish its source + build. Used by
 /// the publisher Job to drive [`Publisher::release_code`] and
@@ -379,13 +381,9 @@ impl<R: CommandRunner, B: BackendClient> BackendPublisher<R, B> {
         // repo that the publisher re-inits, or whose vendored tree is otherwise
         // untracked, is still self-contained and installable. Already-tracked files
         // make this a no-op.
-        if dir.join(crate::test_case::TCAB_VENDOR_DIR).is_dir() {
-            self.require(
-                "git",
-                &["add", "--force", crate::test_case::TCAB_VENDOR_DIR],
-                Some(dir),
-            )
-            .await?;
+        if dir.join(TCAB_VENDOR_DIR).is_dir() {
+            self.require("git", &["add", "--force", TCAB_VENDOR_DIR], Some(dir))
+                .await?;
         }
         // Redact any leaked API key from the staged tree before it is committed
         // and pushed to the run's public repository: a model that dumped its
@@ -788,5 +786,5 @@ pub fn implementation_dir(record_path: &Path) -> PathBuf {
 }
 
 #[cfg(test)]
-#[path = "publish.test.rs"]
+#[path = "release.test.rs"]
 mod tests;
