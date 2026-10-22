@@ -1,0 +1,3 @@
+crates/publisher/
+crates/core/src/publish.rs
+crates/core/src/publish.test.rs

@@ -1,8 +1,10 @@
 [package]
 name = "tcab-publisher"
+description = "The publisher: the per-publish Job that releases a reviewed run to Cloudflare Pages and GitHub."
 edition.workspace = true
 version.workspace = true
 license.workspace = true
+repository.workspace = true
 publish.workspace = true
 
 [[bin]]
