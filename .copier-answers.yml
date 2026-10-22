@@ -2,7 +2,7 @@
 # kit was last rendered or updated from. Copier maintains it through the
 # superrepo's scripts/repos/render.py; a change made here is overwritten by
 # the next update.
-_commit: v0.6.3-5438-g24a546b59
+_commit: v0.6.3-5468-g39f826731
 _src_path: ..
 description: 'The publisher: the per-publish Job that releases a reviewed run to Cloudflare
     Pages and GitHub.'
