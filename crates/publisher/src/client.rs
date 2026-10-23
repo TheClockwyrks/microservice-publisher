@@ -152,12 +152,11 @@ impl PublishJobClient {
     /// carries (`GET /runs/{id}`). Like every call, it presents the per-publish-job token:
     /// reads need an identity too.
     ///
-    /// The publisher calls this *before* doing any external work. Publishing is not
-    /// idempotent on the Cloudflare side: `wrangler pages deploy` mints a brand-new
-    /// deployment on every invocation, so a job that runs against an already-published
-    /// run leaves a second, orphaned public build behind — the failure this preflight
-    /// exists to prevent. (The `gh` side reuses an existing repository, which is why
-    /// the duplication only ever shows up as extra Pages deployments.)
+    /// The publisher calls this *before* doing any external work. Every release step
+    /// is safe to repeat (the Pages deploy reuses the deployment of the same build,
+    /// and the repos service's publish is idempotent), but the links the run carries
+    /// are the ones it was published with, so reporting them makes a job that runs
+    /// against an already-published run a truthful no-op.
     ///
     /// `Some` means the run is published and the release must be skipped; `None` means
     /// it still needs releasing. An unreachable backend is an error rather than a

@@ -12,16 +12,18 @@
 //! | `TCAB_PUBLISH_JOB_TOKEN` | yes | The per-publish-job bearer token authenticating the binary's calls (and the `tree.tar` download). | — |
 //! | `TCAB_PUBLISH_RUN_ID` | yes | The id of the run to release — the artifact-service store key the source tree is downloaded by. | — |
 //! | `TCAB_ARTIFACTS_URL` | yes | The artifact service the run's source tree is downloaded from (`GET /runs/{id}/tree.tar`). | — |
+//! | `TCAB_REPOS_URL` | yes | The repos service whose publish route creates the run's public repository and pushes to it (`POST /runs/{id}/publish`). | — |
 //! | `TCAB_WORK_DIR` | no | Ephemeral scratch directory the downloaded tree is untarred into. The pod is disposable, so this is lost on exit. | `./.tcab-publisher` |
 //! | `TCAB_PUBLISHER_TERMINATION_GRACE_SECONDS` | no | The pod's termination grace period, in seconds: how long the publisher has after `SIGTERM` to finish the step it is on and report (see [`crate::sequence`]). It matches the publisher Job's `terminationGracePeriodSeconds`, which the dispatcher leaves at Kubernetes' default. | `30` |
 //!
-//! `TCAB_GITHUB_ORG` / `TCAB_PAGES_PROJECT` are **not** parsed here — they are read
-//! directly by [`PublishConfig::from_env`](crate::release::PublishConfig::from_env)
-//! when the release runs. `GH_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and
-//! `CLOUDFLARE_API_TOKEN` arrive via the Job's `envFrom`. `GH_TOKEN` is consumed by
-//! `gh` alone. The Cloudflare pair is consumed by `wrangler` and read by
-//! [`PagesApi::from_env`](crate::pages::PagesApi::from_env) when the release runs,
-//! to look the build's deployment up before deploying it; both are required.
+//! `TCAB_PAGES_PROJECT` is **not** parsed here: it is read by
+//! [`PublishConfig::from_env`](crate::release::PublishConfig::from_env) when the
+//! release runs. `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`, the Job's one
+//! credential, arrive via the Job's `envFrom`; they are consumed by `wrangler` and
+//! read by [`PagesApi::from_env`](crate::pages::PagesApi::from_env) when the
+//! release runs, to look the build's deployment up before deploying it, and both
+//! are required. Those three are all the release reads: the GitHub organization
+//! and token are the repos service's own.
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -70,6 +72,9 @@ pub struct Config {
     /// The artifact service base URL the run's source tree is downloaded from
     /// (`TCAB_ARTIFACTS_URL`), without a trailing slash.
     pub artifacts_url: String,
+    /// The repos service base URL whose publish route publishes the run's public
+    /// repository (`TCAB_REPOS_URL`), without a trailing slash.
+    pub repos_url: String,
     /// Ephemeral scratch directory the downloaded tree is untarred into
     /// (`TCAB_WORK_DIR`). The pod is disposable, so this is lost on exit.
     pub work_dir: PathBuf,
@@ -84,8 +89,8 @@ impl Config {
     /// Resolve the configuration from the process environment.
     ///
     /// `TCAB_BACKEND_URL`, `TCAB_PUBLISH_JOB_ID`, `TCAB_PUBLISH_JOB_TOKEN`,
-    /// `TCAB_PUBLISH_RUN_ID`, and `TCAB_ARTIFACTS_URL` are required (the dispatcher
-    /// always sets them); `TCAB_WORK_DIR` and
+    /// `TCAB_PUBLISH_RUN_ID`, `TCAB_ARTIFACTS_URL` and `TCAB_REPOS_URL` are
+    /// required (the dispatcher always sets them); `TCAB_WORK_DIR` and
     /// `TCAB_PUBLISHER_TERMINATION_GRACE_SECONDS` default, and the latter must be a
     /// whole number of seconds when set. A blank value is treated as
     /// unset so an empty export does not slip through.
@@ -102,6 +107,10 @@ impl Config {
             non_empty("TCAB_PUBLISH_RUN_ID").ok_or(ConfigError::Missing("TCAB_PUBLISH_RUN_ID"))?;
         let artifacts_url = non_empty("TCAB_ARTIFACTS_URL")
             .ok_or(ConfigError::Missing("TCAB_ARTIFACTS_URL"))?
+            .trim_end_matches('/')
+            .to_string();
+        let repos_url = non_empty("TCAB_REPOS_URL")
+            .ok_or(ConfigError::Missing("TCAB_REPOS_URL"))?
             .trim_end_matches('/')
             .to_string();
         let work_dir = non_empty("TCAB_WORK_DIR")
@@ -124,6 +133,7 @@ impl Config {
             publish_job_token,
             run_id,
             artifacts_url,
+            repos_url,
             work_dir,
             termination_grace,
         })

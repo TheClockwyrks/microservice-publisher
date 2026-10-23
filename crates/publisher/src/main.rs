@@ -3,9 +3,9 @@
 //! Resolves its configuration from the environment the dispatcher set, then runs
 //! the publisher's step sequence (see [`tcab_publisher::sequence`]): the
 //! publication preflight, the download of the reviewed run's source tree from the
-//! artifact service, the Cloudflare Pages deploy and the GitHub-repo publish, in
-//! that order, streaming progress lines to the backend, then reports the terminal
-//! [`PublishResult`](test_cabinet_contracts::publish_job_api::PublishResult) —
+//! artifact service, the Cloudflare Pages deploy and the repository publish
+//! through the repos service, in that order, streaming progress lines to the
+//! backend, then reports the terminal [`PublishResult`](test_cabinet_contracts::publish_job_api::PublishResult) —
 //! carrying the produced links on success or the reason on failure — and exits.
 //! On `SIGTERM` it starts no further step and reports the publish interrupted
 //! within the pod's termination grace period. There is no server and no flags;
@@ -53,6 +53,7 @@ async fn main() -> ExitCode {
         publish_job_id = %config.publish_job_id,
         run_id = %config.run_id,
         artifacts = %config.artifacts_url,
+        repos = %config.repos_url,
         "publisher releasing one run, streaming to the backend"
     );
 

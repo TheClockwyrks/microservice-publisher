@@ -78,7 +78,7 @@ fn only_timeouts_rate_limits_and_server_errors_are_transient_statuses() {
 
 #[test]
 fn the_release_errors_are_classified() {
-    assert!(Error::Command("`git push` failed".to_string()).is_transient());
+    assert!(Error::Command("`wrangler pages deploy` failed".to_string()).is_transient());
     assert!(
         Error::PagesApi {
             status: None,
@@ -106,8 +106,40 @@ fn the_release_errors_are_classified() {
             "{status}"
         );
     }
-    assert!(!Error::Diverged("TheClockwyrks/tcab-x".to_string()).is_transient());
-    assert!(!Error::Publish("no Cloudflare API is configured".to_string()).is_transient());
+    assert!(
+        Error::Repos {
+            status: None,
+            detail: String::new()
+        }
+        .is_transient()
+    );
+    for status in [408, 429, 500, 502, 504] {
+        assert!(
+            Error::Repos {
+                status: Some(status),
+                detail: String::new()
+            }
+            .is_transient(),
+            "{status}"
+        );
+    }
+    // A `503` is a repos service not configured to publish, which no repeat
+    // changes.
+    for status in [200, 401, 404, 422, 503] {
+        assert!(
+            !Error::Repos {
+                status: Some(status),
+                detail: String::new()
+            }
+            .is_transient(),
+            "{status}"
+        );
+    }
+    assert!(
+        !Error::Diverged("`TheClockwyrks/tcab-x` already holds a `main`".to_string())
+            .is_transient()
+    );
+    assert!(!Error::Publish("the publish configuration is incomplete".to_string()).is_transient());
 }
 
 #[test]
