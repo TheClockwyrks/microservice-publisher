@@ -717,10 +717,11 @@ impl<R: CommandRunner, B: BackendClient> Publisher for BackendPublisher<R, B> {
         }
 
         // Asset-generation runs produce no code — their authoritative output is the
-        // recorded drawing operations, uploaded separately to the backend. There is
-        // nothing to commit or push, so no per-run GitHub repository is created and
-        // the run carries no source link. Every other (code-writing) type releases
-        // its implementation; see `TestType::releases_source_repo`.
+        // recorded drawing operations, held in the run's tree on the artifacts
+        // service. There is nothing to commit or push, so no per-run GitHub
+        // repository is created and the run carries no source link. Every other
+        // (code-writing) type releases its implementation; see
+        // `TestType::releases_source_repo`.
         if !record.subject.test_type.releases_source_repo() {
             return Ok(None);
         }
