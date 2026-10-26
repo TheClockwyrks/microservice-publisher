@@ -878,7 +878,7 @@ async fn a_refused_push_whose_remote_holds_another_tree_fails_without_retrying()
 #[tokio::test]
 async fn release_code_of_an_asset_generation_run_creates_no_repo() {
     // Asset-generation runs produce no code — their output is the recorded drawing
-    // operations, uploaded separately. Releasing one must NOT create a GitHub repo
+    // operations, held in the run's tree. Releasing one must NOT create a GitHub repo
     // (or touch git at all), and the run carries no source link.
     let dir = tempfile::tempdir().expect("tempdir");
     let (publisher, impl_dir, _build_dir) = publisher_for(dir.path(), MockRunner::new(false));
