@@ -1,6 +1,6 @@
 [package]
 name = "tcab-publisher"
-description = "The publisher: the per-publish Job that releases a reviewed run to Cloudflare Pages and GitHub."
+description = "The publisher: the per-publish Job that releases a reviewed run to Cloudflare Pages and, through the repos service, GitHub."
 edition.workspace = true
 version.workspace = true
 license.workspace = true
@@ -18,12 +18,8 @@ path = "src/lib.rs"
 [dependencies]
 # The run record, the run-tree layout and the publish-job wire types.
 test-cabinet-contracts = { workspace = true }
-# The collected implementation a release stages (`execution::ArtifactCollection`).
-test-cabinet-suites = { workspace = true }
-# Secret scrubbing of the staged tree and the built output before egress.
+# Secret scrubbing of the built output before it is deployed.
 test-cabinet-redact = { workspace = true }
-# The backend's HTTP client, from contracts.
-test-cabinet-backend-client = { workspace = true }
 # The publisher is a binary: it owns telemetry init, so it pulls the heavy `otlp`
 # feature (the propagation-only default is for libraries), exactly as
 # the driver's main does.
@@ -34,20 +30,18 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
-# The HTTP client the publisher downloads the run tree with and streams
-# progress/result back to the backend with. rustls (no system OpenSSL), `json`
+# The HTTP client the publisher downloads the run tree with, calls the repos
+# service's publish route with and streams progress/result back to the backend
+# with. rustls (no system OpenSSL), `json`
 # for the bodies.
 reqwest = { workspace = true }
 # The downloaded `tree.tar` body, handed out of the retried request as it came.
 bytes = { workspace = true }
-# The `CommandRunner` seam the release drives `gh`/`git`/`wrangler` through.
+# The `CommandRunner` seam the Pages deploy drives `wrangler` through.
 async-trait = { workspace = true }
 # Untar the `application/x-tar` source tree the artifact service serves (pure
 # Rust, matching the driver's upload side which tars the same layout).
 tar = "0.4"
-# Parsing the record's RFC 3339 `finished_at` into the implementation commit's
-# fixed date.
-time = { workspace = true }
 # The digest of the scrubbed build a Pages deployment carries as its commit hash.
 sha2 = { workspace = true }
 hex = { workspace = true }

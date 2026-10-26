@@ -17,6 +17,7 @@ const ALL_VARS: &[&str] = &[
     "TCAB_PUBLISH_JOB_TOKEN",
     "TCAB_PUBLISH_RUN_ID",
     "TCAB_ARTIFACTS_URL",
+    "TCAB_REPOS_URL",
     "TCAB_WORK_DIR",
     "TCAB_PUBLISHER_TERMINATION_GRACE_SECONDS",
 ];
@@ -50,6 +51,7 @@ fn set_required() {
     set("TCAB_PUBLISH_JOB_TOKEN", "pub-tok");
     set("TCAB_PUBLISH_RUN_ID", "run-9");
     set("TCAB_ARTIFACTS_URL", "http://artifacts:9090/");
+    set("TCAB_REPOS_URL", "http://repos:8792/");
 }
 
 #[test]
@@ -58,9 +60,10 @@ fn resolves_with_required_and_defaults() {
         set_required();
         let config = Config::from_env().expect("config should resolve");
 
-        // Trailing slashes trimmed off both URLs.
+        // Trailing slashes trimmed off every URL.
         assert_eq!(config.backend_url, "http://backend:8787");
         assert_eq!(config.artifacts_url, "http://artifacts:9090");
+        assert_eq!(config.repos_url, "http://repos:8792");
         assert_eq!(config.publish_job_id, "pub-job-1");
         assert_eq!(config.publish_job_token, "pub-tok");
         assert_eq!(config.run_id, "run-9");
@@ -90,6 +93,7 @@ fn each_required_variable_is_enforced() {
         "TCAB_PUBLISH_JOB_TOKEN",
         "TCAB_PUBLISH_RUN_ID",
         "TCAB_ARTIFACTS_URL",
+        "TCAB_REPOS_URL",
     ];
     for missing in required {
         with_env(|| {

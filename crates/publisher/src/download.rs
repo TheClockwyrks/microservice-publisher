@@ -25,7 +25,7 @@ use crate::retry::{Backoff, retry};
 /// download, so the artifact service verifies the per-publish-job token against the
 /// right publish job (the path id is the run/record store key, a different UUID).
 /// Mirrors the constant the artifact service reads it under.
-const PUBLISH_JOB_ID_HEADER: &str = "x-tcab-publish-job-id";
+pub(crate) const PUBLISH_JOB_ID_HEADER: &str = "x-tcab-publish-job-id";
 
 /// A failure downloading or unpacking the run's source tree.
 #[derive(Debug, thiserror::Error)]

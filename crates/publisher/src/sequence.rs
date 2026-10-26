@@ -29,6 +29,7 @@ use crate::config::Config;
 use crate::download::{DownloadError, download_run_tree};
 use crate::publish::{PreparedRelease, ReleasedLinks};
 use crate::release::SystemCommandRunner;
+use crate::repos::ReposClient;
 use crate::retry::Backoff;
 
 /// The start of the failure detail a publisher interrupted by `SIGTERM`
@@ -371,10 +372,11 @@ fn reported(outcome: Result<(), String>) -> bool {
 }
 
 /// The steps of a real publish Job: the backend over the publish-job client, the
-/// artifacts service, and `gh`/`git`/`wrangler` with the Cloudflare API.
+/// artifacts service, `wrangler` with the Cloudflare API, and the repos service.
 pub struct JobSteps<'a> {
     config: &'a Config,
     client: &'a PublishJobClient,
+    repos: ReposClient,
     release: Option<PreparedRelease<SystemCommandRunner>>,
 }
 
@@ -384,6 +386,12 @@ impl<'a> JobSteps<'a> {
         Self {
             config,
             client,
+            repos: ReposClient::new(
+                config.repos_url.clone(),
+                config.run_id.clone(),
+                config.publish_job_id.clone(),
+                config.publish_job_token.clone(),
+            ),
             release: None,
         }
     }
@@ -454,7 +462,7 @@ impl Steps for JobSteps<'_> {
 
     async fn publish_repository(&mut self) -> Result<Option<String>, String> {
         self.prepared()?
-            .publish_repository()
+            .publish_repository(&self.repos)
             .await
             .map_err(|err| err.to_string())
     }

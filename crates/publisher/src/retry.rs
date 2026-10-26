@@ -4,16 +4,17 @@
 //! with backoff before the publish fails (see `components/backend/results.md`,
 //! "Repeating a step"): the preflight read and the download from the backend and
 //! the artifact service, the Pages deploy (the deployment lookup and `wrangler`),
-//! the repository publish (`gh repo view`/`create` and the push) and the result
-//! report. Every one of those steps is safe to repeat, so a retry is a repeat of
-//! the whole step.
+//! the repository publish (the repos service's `POST /runs/{id}/publish`) and the
+//! result report. Every one of those steps is safe to repeat, so a retry is a
+//! repeat of the whole step.
 //!
 //! One policy ([`Backoff`]) and one classifier ([`Transient`]) serve them all. A
 //! failure is transient when repeating the step could succeed: a request that got
-//! no response, a `408`, `429` or `5xx` answer, or a `gh`/`git`/`wrangler` run that
-//! failed. Every other `4xx` answer, a response that cannot be read, a repository
-//! whose `main` holds another tree ([`Error::Diverged`]) and an incomplete
-//! configuration are permanent and fail at once.
+//! no response, a `408`, `429` or `5xx` answer, or a `wrangler` run that failed.
+//! Every other `4xx` answer, a response that cannot be read, a repository whose
+//! `main` holds another tree ([`Error::Diverged`]), a repos service that is not
+//! configured to publish (its `503`) and an incomplete configuration are
+//! permanent and fail at once.
 
 use std::fmt::Display;
 use std::future::Future;
@@ -38,8 +39,8 @@ pub struct Backoff {
 
 impl Default for Backoff {
     /// Six runs with pauses of 1, 2, 4, 8 and 16 seconds: about half a minute,
-    /// which rides out a backend or artifact service restart, GitHub's
-    /// permission-propagation lag on a new repository and a Cloudflare hiccup,
+    /// which rides out a backend, artifact or repos service restart and a
+    /// Cloudflare hiccup,
     /// while staying far inside the publisher Job's deadline.
     fn default() -> Self {
         Self {
@@ -90,6 +91,14 @@ impl Transient for Error {
                 status: Some(status),
                 ..
             } => status_is_transient(*status),
+            Error::Repos { status: None, .. } => true,
+            // The repos service answers `503` when it is not configured to
+            // publish, which no repeat changes; its other `5xx` (a `502` upstream
+            // failure among them) may pass.
+            Error::Repos {
+                status: Some(status),
+                ..
+            } => *status != 503 && status_is_transient(*status),
             Error::Publish(_) | Error::Diverged(_) => false,
         }
     }

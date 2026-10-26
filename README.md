@@ -1,7 +1,7 @@
 # microservice-publisher
 
 The publisher: the per-publish Job that releases a reviewed run to Cloudflare
-Pages and GitHub.
+Pages and, through the repos service, GitHub.
 
 This repository is one component of
 [The Test Cabinet](https://github.com/TheClockwyrks/TheTestCabinet). What it is
@@ -15,28 +15,28 @@ between the repositories.
 `crates/publisher` is `tcab-publisher`, the publisher: the one-shot binary of
 the per-publish Job the dispatcher admits for each publish of a reviewed run.
 It downloads the run's source tree from the artifact service, deploys the
-run's playable build to Cloudflare Pages through `wrangler`, publishes the
-implementation to a public GitHub repository through `gh` and `git`, streams
-its progress to the backend through the backend client of the contracts
-repository, reports the terminal result and exits. It holds no state of its
-own and serves nothing.
+run's playable build to Cloudflare Pages through `wrangler`, calls the repos
+service's `POST /runs/{id}/publish`, which creates the run's public GitHub
+repository and pushes the run's implementation to it, streams its progress to
+the backend over its per-publish-job token, reports the terminal result and
+exits. It holds no state of its own and serves nothing.
 
 What the publish must do is stated by the superrepo's
 `apps/docs/src/content/docs/components/backend/results.md` (its Publish
 section). Its configuration is entirely environment variables, documented in
 `crates/publisher/src/config.rs`; the backend, the publish job, its token, the
-run and the artifact service are required, and the release reads
-`TCAB_GITHUB_ORG`, `TCAB_PAGES_PROJECT`, `GH_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
-and `CLOUDFLARE_API_TOKEN` when it runs. Without them the binary names the
+run, the artifact service and the repos service are required, and the release
+reads `TCAB_PAGES_PROJECT`, `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`
+when it runs. The Cloudflare credential is the only one the Job holds; the
+GitHub credential is the repos service's. Without them the binary names the
 first missing variable and exits nonzero:
 
 ```sh
 cargo run --bin tcab-publisher
 ```
 
-The image carries the tools the release shells out to, `git`, `gh` and
-`wrangler` at the version the `Dockerfile` pins, and runs as the unprivileged
-`node` user.
+The image carries the one tool the release shells out to, `wrangler`, at the
+version the `Dockerfile` pins, and runs as the unprivileged `node` user.
 
 The dispatcher's configuration that names this image, the publisher Job's
 secrets and the deploy sets pinning it live in the superrepo, under

@@ -33,9 +33,7 @@ all = "deny"
 # dependency-edges gate refuses both.
 [workspace.dependencies]
 test-cabinet-contracts = { git = "https://github.com/TheClockwyrks/contracts", tag = "v0.2.4" }
-test-cabinet-suites = { git = "https://github.com/TheClockwyrks/contracts", tag = "v0.2.4" }
 test-cabinet-redact = { git = "https://github.com/TheClockwyrks/contracts", tag = "v0.2.4" }
-test-cabinet-backend-client = { git = "https://github.com/TheClockwyrks/contracts", tag = "v0.2.4" }
 test-cabinet-telemetry = { git = "https://github.com/TheClockwyrks/contracts", tag = "v0.2.4" }
 
 # The third-party crates the members share, at the requirements the superrepo
@@ -57,6 +55,5 @@ serde_json = "1"
 sha2 = "0.10"
 tempfile = "3"
 thiserror = "2"
-time = { version = "0.3", features = ["serde", "formatting", "parsing", "macros"] }
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
